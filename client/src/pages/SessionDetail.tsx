@@ -1,27 +1,22 @@
-import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { api, ApiError } from "../api";
 import NoteContent from "../components/NoteContent";
 import { CATEGORY_LABEL, durationMinutes, fmtDate, fmtDuration, fmtTime } from "../lib";
-import type { Session } from "../types";
+import { store } from "../store";
 
 export default function SessionDetail() {
   const { id } = useParams<{ id: string }>();
-  const [session, setSession] = useState<Session | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const session = id ? store.getSession(id) : undefined;
 
-  useEffect(() => {
-    if (!id) return;
-    api
-      .getSession(id)
-      .then(setSession)
-      .catch((err) =>
-        setError(err instanceof ApiError ? err.message : "Failed to load session")
-      );
-  }, [id]);
-
-  if (error) return <p style={{ color: "var(--belt-red)" }}>{error}</p>;
-  if (!session) return <p aria-busy="true">Loading session…</p>;
+  if (!session) {
+    return (
+      <>
+        <p>
+          <Link to="/log">← Back to log</Link>
+        </p>
+        <p>Session not found.</p>
+      </>
+    );
+  }
 
   return (
     <>

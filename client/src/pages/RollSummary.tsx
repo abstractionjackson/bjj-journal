@@ -5,14 +5,11 @@ import { aggregatePartners, fmtDate, inDateRange, useSessions } from "../lib";
 type SortKey = "rolls" | "recent";
 
 export default function RollSummary() {
-  const { sessions, error } = useSessions();
+  const { sessions } = useSessions();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("rolls");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-
-  if (error) return <p style={{ color: "var(--belt-red)" }}>{error}</p>;
-  if (!sessions) return <p aria-busy="true">Loading rolls…</p>;
 
   const q = query.trim().toLowerCase();
   const visibleSessions = sessions

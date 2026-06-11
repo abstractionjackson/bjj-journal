@@ -1,3 +1,25 @@
+* [2026-06-11 Thu 13:51]
+** Production Readiness
+*** DONE Refactor as Pure Front End
+- migrate from an express API to an api that runs exclusively in the browser
+- instead of persisting .json data to disk, write to localStorage
+- add an export option
+- manage application state in scripts on the browser
+- remove auth; application will be unique user
+*** DONE Package for Distribution
+- add metadata, incl. favicon and opengraph
+- The application should be available for download, such that a user
+  can clone the code from GitHub, and run the application locally.
+- The documentation should include instructions on how to run the application
+*** DONE Create an Example Site
+- Create an example version of the site that can be deployed to GitHub Pages
+- The site should feature realistic mock data for 6 months of
+  training
+** Deployment
+*** DONE Deploy Code to GitHub Pages
+- define a GitHub Actions workflow that will build the example site
+  for Pages
+- create a new GH repo and push the code
 * [2026-06-11 Thu 11:47]
 ** FE
 *** Sessions List

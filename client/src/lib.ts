@@ -1,25 +1,13 @@
-import { useCallback, useEffect, useState } from "react";
-import { api, ApiError } from "./api";
+import { useCallback, useState } from "react";
+import { store } from "./store";
 import type { MoveCategory, Session } from "./types";
 
 export function useSessions() {
-  const [sessions, setSessions] = useState<Session[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  const reload = useCallback(async () => {
-    try {
-      setSessions(await api.listSessions());
-      setError(null);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to load sessions");
-    }
-  }, []);
-
-  useEffect(() => {
-    void reload();
-  }, [reload]);
-
-  return { sessions, error, reload };
+  const [sessions, setSessions] = useState<Session[]>(() =>
+    store.listSessions()
+  );
+  const reload = useCallback(() => setSessions(store.listSessions()), []);
+  return { sessions, reload };
 }
 
 export function fmtDate(iso: string): string {

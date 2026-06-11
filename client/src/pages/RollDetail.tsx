@@ -1,33 +1,17 @@
-import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { api, ApiError } from "../api";
 import NoteContent from "../components/NoteContent";
 import { fmtDate, fmtTime } from "../lib";
-import type { Session } from "../types";
+import { store } from "../store";
 
 export default function RollDetail() {
   const { sessionId, rollId } = useParams<{
     sessionId: string;
     rollId: string;
   }>();
-  const [session, setSession] = useState<Session | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const session = sessionId ? store.getSession(sessionId) : undefined;
 
-  useEffect(() => {
-    if (!sessionId) return;
-    api
-      .getSession(sessionId)
-      .then(setSession)
-      .catch((err) =>
-        setError(err instanceof ApiError ? err.message : "Failed to load roll")
-      );
-  }, [sessionId]);
-
-  if (error) return <p style={{ color: "var(--belt-red)" }}>{error}</p>;
-  if (!session) return <p aria-busy="true">Loading roll…</p>;
-
-  const roll = session.rolls.find((r) => r.id === rollId);
-  if (!roll) {
+  const roll = session?.rolls.find((r) => r.id === rollId);
+  if (!session || !roll) {
     return (
       <>
         <p>

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Black belt with red rank bar and white stripes. -->
+  <rect width="64" height="64" rx="12" fill="#1b1b1f"/>
+  <rect y="25" width="64" height="14" fill="#1b1b1f"/>
+  <rect y="25" width="40" height="14" fill="#3a3a40"/>
+  <rect x="40" y="25" width="24" height="14" fill="#a31621"/>
+  <rect x="45" y="25" width="3" height="14" fill="#fff"/>
+  <rect x="51" y="25" width="3" height="14" fill="#fff"/>
+  <rect x="57" y="25" width="3" height="14" fill="#fff"/>
+</svg>

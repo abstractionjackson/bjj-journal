@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { api } from "../api";
+import { useState } from "react";
+import { store } from "../store";
 import type { MoveCategory, Partner, Session, SessionInput } from "../types";
 
 interface Props {
@@ -39,11 +39,7 @@ export default function SessionForm({ initial, onSubmit, onCancel }: Props) {
   const [rolls, setRolls] = useState<RollRow[]>(initial?.rolls ?? []);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [partners, setPartners] = useState<Partner[]>([]);
-
-  useEffect(() => {
-    api.listPartners().then(setPartners).catch(() => {});
-  }, []);
+  const [partners] = useState<Partner[]>(() => store.listPartners());
 
   // Default the end to one hour after the start; never touch an end the user
   // already set. Runs on blur, not change: the picker fires change as soon as

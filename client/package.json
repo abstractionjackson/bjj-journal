@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:example": "tsc -b && VITE_EXAMPLE=true vite build --base=/bjj-journal/",
     "preview": "vite preview"
   },
   "dependencies": {

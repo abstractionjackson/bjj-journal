@@ -1,36 +1,64 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { api } from "../api";
 import SessionForm from "../components/SessionForm";
 import { durationMinutes, fmtDate, fmtDuration, fmtTime, useSessions } from "../lib";
+import { store } from "../store";
 import type { Session, SessionInput } from "../types";
 
 export default function Log() {
-  const { sessions, error, reload } = useSessions();
+  const { sessions, reload } = useSessions();
   const [mode, setMode] = useState<"idle" | "create" | "edit">("idle");
   const [editing, setEditing] = useState<Session | null>(null);
-
-  if (error) return <p style={{ color: "var(--belt-red)" }}>{error}</p>;
-  if (!sessions) return <p aria-busy="true">Loading sessions…</p>;
+  const [dataMessage, setDataMessage] = useState<string | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
 
   async function handleCreate(input: SessionInput) {
-    await api.createSession(input);
+    store.createSession(input);
     setMode("idle");
-    await reload();
+    reload();
   }
 
   async function handleUpdate(input: SessionInput) {
     if (!editing) return;
-    await api.updateSession(editing.id, input);
+    store.updateSession(editing.id, input);
     setMode("idle");
     setEditing(null);
-    await reload();
+    reload();
   }
 
-  async function handleDelete(s: Session) {
+  function handleDelete(s: Session) {
     if (!window.confirm(`Delete the session from ${fmtDate(s.start)}?`)) return;
-    await api.deleteSession(s.id);
-    await reload();
+    store.deleteSession(s.id);
+    reload();
+  }
+
+  function handleExport() {
+    const blob = new Blob([store.exportJson()], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `bjj-journal-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleImport(file: File) {
+    if (
+      !window.confirm(
+        "Importing replaces everything currently in your journal. Continue?"
+      )
+    ) {
+      return;
+    }
+    try {
+      const { sessions: count } = store.importJson(await file.text());
+      setDataMessage(`Imported ${count} session${count === 1 ? "" : "s"}.`);
+      reload();
+    } catch (err) {
+      setDataMessage(
+        `Import failed: ${err instanceof Error ? err.message : "unknown error"}`
+      );
+    }
   }
 
   return (
@@ -96,7 +124,7 @@ export default function Log() {
                     </button>
                     <button
                       className="secondary outline"
-                      onClick={() => void handleDelete(s)}
+                      onClick={() => handleDelete(s)}
                     >
                       Delete
                     </button>
@@ -107,6 +135,33 @@ export default function Log() {
           </tbody>
         </table>
       )}
+
+      <h3 style={{ marginTop: "2rem" }}>Your data</h3>
+      <p className="muted">
+        The journal lives in this browser's localStorage. Export it as JSON to
+        back it up or move it to another machine; import a previously exported
+        file to restore it.
+      </p>
+      <div className="row-actions">
+        <button className="outline" onClick={handleExport}>
+          Export JSON
+        </button>
+        <button className="outline" onClick={() => fileInput.current?.click()}>
+          Import JSON
+        </button>
+        <input
+          ref={fileInput}
+          type="file"
+          accept="application/json,.json"
+          style={{ display: "none" }}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) void handleImport(file);
+            e.target.value = "";
+          }}
+        />
+      </div>
+      {dataMessage && <p>{dataMessage}</p>}
     </>
   );
 }

@@ -8,10 +8,7 @@ import {
 } from "../lib";
 
 export default function SessionList() {
-  const { sessions, error } = useSessions();
-
-  if (error) return <p style={{ color: "var(--belt-red)" }}>{error}</p>;
-  if (!sessions) return <p aria-busy="true">Loading sessions…</p>;
+  const { sessions } = useSessions();
 
   return (
     <>

@@ -3,10 +3,7 @@ import { fmtDate, fmtTime, useSessions } from "../lib";
 
 export default function PartnerDetail() {
   const { name } = useParams<{ name: string }>();
-  const { sessions, error } = useSessions();
-
-  if (error) return <p style={{ color: "var(--belt-red)" }}>{error}</p>;
-  if (!sessions) return <p aria-busy="true">Loading partner…</p>;
+  const { sessions } = useSessions();
 
   const decoded = decodeURIComponent(name ?? "");
   const rolls = sessions.flatMap((s) =>

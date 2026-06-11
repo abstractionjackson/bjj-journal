@@ -13,15 +13,12 @@ import type { MoveCategory } from "../types";
 type SortKey = "drilled" | "recent" | "name";
 
 export default function MoveSummary() {
-  const { sessions, error } = useSessions();
+  const { sessions } = useSessions();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("drilled");
   const [category, setCategory] = useState<"all" | MoveCategory>("all");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
-
-  if (error) return <p style={{ color: "var(--belt-red)" }}>{error}</p>;
-  if (!sessions) return <p aria-busy="true">Loading moves…</p>;
 
   const moves = aggregateMoves(sessions)
     .filter((m) => fuzzyMatch(query, m.moveName))

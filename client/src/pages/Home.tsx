@@ -9,10 +9,7 @@ import {
 } from "../lib";
 
 export default function Home() {
-  const { sessions, error } = useSessions();
-
-  if (error) return <p style={{ color: "var(--belt-red)" }}>{error}</p>;
-  if (!sessions) return <p aria-busy="true">Loading sessions…</p>;
+  const { sessions } = useSessions();
 
   const totalMinutes = sessions.reduce((sum, s) => sum + durationMinutes(s), 0);
   const totalRolls = sessions.reduce((sum, s) => sum + s.rolls.length, 0);

@@ -10,10 +10,7 @@ import {
 
 export default function MoveDetail() {
   const { name } = useParams<{ name: string }>();
-  const { sessions, error } = useSessions();
-
-  if (error) return <p style={{ color: "var(--belt-red)" }}>{error}</p>;
-  if (!sessions) return <p aria-busy="true">Loading move…</p>;
+  const { sessions } = useSessions();
 
   const decoded = decodeURIComponent(name ?? "");
   const move = aggregateMoves(sessions).find(

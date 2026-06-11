@@ -27,6 +27,19 @@
   background: #fff;
 }
 
+/* Banner shown only on the example (GitHub Pages) build. */
+.example-banner {
+  background: var(--mat-blue);
+  color: #fff;
+  text-align: center;
+  font-size: 0.85rem;
+  padding: 0.4rem 1rem;
+}
+.example-banner a {
+  color: #fff;
+  text-decoration: underline;
+}
+
 nav.site-nav {
   margin-bottom: 1.5rem;
 }

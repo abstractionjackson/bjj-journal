@@ -2,42 +2,63 @@
 
 A structured training log for Brazilian Jiu-Jitsu. Log sessions with the drills you worked and the rounds you rolled, then review your history by session, by move, or by partner.
 
+BJJ Journal is a pure front-end app: it runs entirely in your browser, stores your journal in localStorage, and needs no server, no account, and no sign-in. It is built for a single user — you.
+
+**Live example:** <https://abstractionjackson.github.io/bjj-journal/> — the same app seeded with six months of realistic demo data.
+
 ## Stack
 
-| Layer      | Choice |
-|------------|--------|
-| Frontend   | React + TypeScript (Vite), PicoCSS |
-| Backend    | Node.js + TypeScript, Express |
-| Storage    | JSON document (`server/data/sessions.json`) |
-| Validation | JSON Schema via Ajv |
-| API        | REST |
-| Auth       | HTTP Basic Auth |
+| Layer    | Choice                                |
+|----------|---------------------------------------|
+| UI       | React + TypeScript (Vite), PicoCSS    |
+| State    | In-browser store (`client/src/store.ts`) |
+| Storage  | `localStorage`, with JSON export/import |
+| Routing  | React Router                          |
 
-## Getting started
+## Running it locally
 
-```bash
-npm install          # installs root, server, and client workspaces
-npm run dev          # runs API (:3001) and Vite dev server (:5173) together
-```
-
-Open http://localhost:5173 and sign in. Default credentials are `admin` / `changeme`; override them with environment variables:
+You need [Node.js](https://nodejs.org) 20 or newer.
 
 ```bash
-BJJ_USER=jack BJJ_PASS=s3cret npm run dev
+git clone https://github.com/abstractionjackson/bjj-journal.git
+cd bjj-journal
+npm install
+npm run dev          # Vite dev server on http://localhost:5173
 ```
+
+Open http://localhost:5173 and start logging — there is nothing else to set up.
 
 ### Production build
 
 ```bash
-npm run build        # compiles server to server/dist and client to client/dist
-npm start            # serves API + built client from :3001
+npm run build        # builds the static site to client/dist
+npm run preview      # serves the built site locally
 ```
+
+`client/dist` is a fully static site; host it anywhere that serves files (GitHub Pages, Netlify, a USB stick).
+
+### Example build
+
+```bash
+npm run build:example
+```
+
+Builds the site in example mode: it seeds six months of deterministic mock training data (under a separate localStorage key, so it never touches a real journal) and shows a banner linking back to this repo. This is what the GitHub Actions workflow deploys to GitHub Pages on every push.
+
+## Your data
+
+The journal lives in your browser's localStorage under the key `bjj-journal.data`. On the **Log** page:
+
+- **Export JSON** downloads the whole journal (sessions + partners) as a dated JSON file — use it for backups or to move between machines/browsers.
+- **Import JSON** restores a previously exported file, replacing whatever is currently stored.
+
+Clearing site data in your browser deletes the journal, so export now and then.
 
 ## Data model
 
 ```
 Session
-├── id: string (UUID, server-assigned)
+├── id: string (UUID)
 ├── start: datetime (ISO 8601)
 ├── end: datetime (ISO 8601)
 ├── notes: string (Markdown or Org-mode)
@@ -55,51 +76,13 @@ Partner
 └── name: string (unique, case-insensitive)
 ```
 
-Partners are auto-registered whenever a session is saved — any partner name not yet in the store is added. A built-in **Generic** partner (id `generic`) is always present so rolls with an unknown partner can still be logged. Partners are stored alongside sessions in the same JSON document.
+Partners are auto-registered whenever a session is saved — any partner name not yet in the store is added. A built-in **Generic** partner is always present so rolls with an unknown partner can still be logged.
 
-## REST API
-
-All `/api` routes require Basic Auth.
-
-### Sessions
-
-| Method | Path                 | Description                  |
-|--------|----------------------|------------------------------|
-| GET    | `/api/sessions`      | List sessions (newest first) |
-| POST   | `/api/sessions`      | Create a session             |
-| GET    | `/api/sessions/:id`  | Fetch one session            |
-| PUT    | `/api/sessions/:id`  | Replace a session            |
-| DELETE | `/api/sessions/:id`  | Delete a session             |
-
-### Partners
-
-| Method | Path                  | Description                                    |
-|--------|-----------------------|------------------------------------------------|
-| GET    | `/api/partners`       | List all partners (Generic first, then A–Z)    |
-| POST   | `/api/partners`       | Create a partner (409 if name already exists)  |
-| GET    | `/api/partners/:id`   | Fetch one partner                              |
-
-Request bodies for POST/PUT are validated against a JSON Schema (`server/src/schema.ts`); invalid payloads return `400` with Ajv error details.
-
-Example — create a session:
-
-```bash
-curl -u admin:changeme -X POST http://localhost:3001/api/sessions \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "start": "2026-06-11T18:30:00Z",
-    "end": "2026-06-11T20:00:00Z",
-    "notes": "Good rounds.",
-    "drills": [{ "moveName": "Arm Drag", "moveCategory": "attack" }],
-    "rolls": [{ "partnerName": "Nick", "notes": "Got the back." }]
-  }'
-```
-
-## Frontend pages
+## Pages
 
 - **Home** — summary stats (sessions, mat time, moves, rolls, partners) and recent sessions (links to full session list)
 - **Sessions** — complete session table with date, time, duration, drill and roll counts
-- **Log** — sessions data table with create / edit / delete
+- **Log** — sessions data table with create / edit / delete, plus JSON export/import
 - **Session detail** — full drills and rolls for one session, notes rendered as Markdown or Org
 - **Moves** — every move drilled, with fuzzy search, sort, category filter, and date-range filter
 - **Move detail** — sessions where a given move was drilled
@@ -113,22 +96,14 @@ Notes fields on session and roll detail pages are rendered by a dependency-free 
 
 ```
 bjj-journal/
-├── server/              Express + Ajv REST API
-│   ├── src/
-│   │   ├── index.ts              app entrypoint (also serves client build)
-│   │   ├── auth.ts               Basic Auth middleware
-│   │   ├── schema.ts             JSON Schema + validators (sessions, partners)
-│   │   ├── storage.ts            JSON document store (atomic writes)
-│   │   ├── types.ts              data model (Session, Drill, Roll, Partner)
-│   │   └── routes/
-│   │       ├── sessions.ts
-│   │       └── partners.ts
-│   └── data/sessions.json        the JSON document (includes partners array)
-└── client/              React + PicoCSS SPA
+├── .github/workflows/pages.yml   builds the example site for GitHub Pages
+└── client/                       React + PicoCSS SPA
+    ├── public/favicon.svg
     └── src/
-        ├── api.ts                fetch client w/ Basic Auth
+        ├── store.ts              localStorage-backed store + export/import
+        ├── exampleData.ts        deterministic 6-month demo dataset
         ├── lib.ts                data hook, formatting, aggregation, fuzzyMatch, inDateRange
-        ├── types.ts              client-side types (Session, Partner, …)
+        ├── types.ts              data model (Session, Drill, Roll, Partner)
         ├── pages/
         │   ├── Home.tsx
         │   ├── Log.tsx
@@ -140,13 +115,15 @@ bjj-journal/
         │   ├── RollDetail.tsx
         │   └── PartnerDetail.tsx
         └── components/
-            ├── Login.tsx
             ├── SessionForm.tsx
             └── NoteContent.tsx   Markdown / Org-mode note renderer
 ```
 
+## Deployment
+
+`.github/workflows/pages.yml` builds the example site (`npm run build:example`) and deploys it to GitHub Pages on every push to `master`. To deploy your own copy, fork the repo, enable Pages (Settings → Pages → Source: GitHub Actions), and push.
+
 ## Notes & next steps
 
-- The JSON store keeps everything in one file with atomic writes — fine for a single user, easy to migrate to SQLite/Postgres later by swapping `storage.ts`.
-- Basic Auth sends credentials on every request; run behind HTTPS in any real deployment.
+- All state goes through `client/src/store.ts`; swapping localStorage for another backend later means changing that one file.
 - Possible additions: roll outcomes (sub for/against), gi vs no-gi tagging, move taxonomy, charts on the Home page.
