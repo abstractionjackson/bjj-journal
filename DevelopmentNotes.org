@@ -1,0 +1,56 @@
+* [2026-06-11 Thu 11:47]
+** FE
+*** Sessions List
+**** DONE Add Sessions List Page
+- include a page that shows a list of all sessions.
+- update the home page to link to this page. plage the link as a
+  subheading to "Recent Sessions"
+*** Add Long Entry Form
+**** DONE Fix Default End Flow
+- the current automatic update of the end from initial start date set
+  happens after the date is set, but before the time, due to how the
+  datetime picker operates. The user chooses a date, and the time in
+  the picker defaults to the current time, causing the end datetime to
+  update. However, the user needs to set the time before the end
+  should update.
+- wait until the user has unfocused the start datetime picker before
+  updaiting the end datetime
+* [2026-06-11 Thu 11:08]
+** FrontEnd
+*** Log
+**** DONE Add Log Entry Form
+- default end time: by default the end time should be 1hr from the
+  start time. If the start datetime is not set, and the user then sets
+  the start, the end should automatically update to one hour later
+  than the start (on the same date). if the end time is already set,
+  udpates to the start time should not effect the end time value.
+*** Detail
+**** DONE Style Notes Article to Readable Width
+- the notes summary article is not width-limited, and a max-width
+  style should be applied that narrows the article to readable
+  dimensions.
+**** DONE Add Markdown and Org Styling to Notes
+- add markdown formatting support
+- add Org formatting support
+*** Moves List
+**** DONE Add Filter/Sort, Search
+- Add search with fuzzy support
+- add order by date, times drilled, alphabetical move name
+- add filter by category, date range
+*** Rolls List
+**** DONE Add Filter/Sort, Search
+- add seach by name
+- add sort by rolls, date
+- add filter by date range
+*** Partner Detail
+**** DONE Add Partner Detail page
+- include list of links to rolls
+** Backend
+*** Data Model
+**** DONE Parnet
+- Add Partner entity
+  - name: string
+  - id: number or uuid (pk)
+- Include a Generic partner, as users may be unable to id their
+  partner
+
