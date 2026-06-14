@@ -46,6 +46,10 @@ nav.site-nav {
 nav.site-nav strong {
   letter-spacing: 0.04em;
 }
+nav.site-nav a.brand {
+  text-decoration: none;
+  color: inherit;
+}
 
 .badge {
   display: inline-block;
@@ -123,6 +127,102 @@ fieldset.item-row > * {
   color: var(--pico-muted-color);
 }
 
+svg.clock {
+  display: block;
+  vertical-align: middle;
+}
+
+/* Instant clock tooltip (the native title attribute is delayed). */
+.clock-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.clock-wrap::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--belt-black);
+  color: #fff;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+.clock-wrap:hover::after,
+.clock-wrap:focus-within::after {
+  opacity: 1;
+}
+
+/* Responsive tables: scroll horizontally on narrow screens instead of wrapping. */
+@media (max-width: 640px) {
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    font-size: 0.85rem;
+  }
+  table th,
+  table td {
+    padding: 0.4rem 0.5rem;
+  }
+}
+
+/* Drill editor: a set of move chips plus an add-move control. */
+fieldset.drill-row {
+  border: 1px solid var(--pico-muted-border-color);
+  border-radius: var(--pico-border-radius);
+  padding: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.drill-moves {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.move-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  font-size: 0.8rem;
+  line-height: 1;
+  padding: 0.35em 0.3em 0.35em 0.7em;
+  border-radius: 999px;
+  background: var(--pico-secondary-background, #e2e2e2);
+  color: var(--pico-secondary-inverse, #fff);
+}
+.move-chip button {
+  width: 1.3em;
+  height: 1.3em;
+  margin: 0;
+  padding: 0;
+  border-radius: 999px;
+  border: none;
+  font-size: 1rem;
+  line-height: 1;
+  background: rgba(0, 0, 0, 0.25);
+  color: inherit;
+}
+.drill-add {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto;
+  gap: 0.5rem;
+}
+.drill-add > * {
+  margin-bottom: 0;
+}
+@media (max-width: 640px) {
+  .drill-add {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Notes articles: cap line length at readable measure. */
 article.notes-article {
   max-width: 70ch;
@@ -138,6 +238,67 @@ article.notes-article {
 }
 .prose blockquote {
   margin-inline: 0;
+}
+
+/* Compact monthly training calendar on the home page. */
+.calendar-card {
+  margin-bottom: 1.5rem;
+}
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  max-width: 20rem;
+  margin-bottom: 0.5rem;
+}
+.calendar-nav strong {
+  font-size: 0.95rem;
+}
+.calendar-nav button {
+  width: auto;
+  margin: 0;
+  padding: 0.1rem 0.7rem;
+}
+.calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  max-width: 20rem;
+}
+.calendar-head {
+  text-align: center;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--pico-muted-color);
+  padding-bottom: 0.1rem;
+}
+.calendar-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.9rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--pico-color);
+  text-decoration: none;
+  border: 1px solid var(--pico-muted-border-color);
+}
+.calendar-cell.is-empty {
+  border: none;
+}
+.calendar-cell.is-today {
+  outline: 2px solid var(--mat-blue);
+  outline-offset: -2px;
+}
+a.calendar-cell.has-session {
+  background: var(--belt-red);
+  border-color: var(--belt-red);
+  color: #fff;
+  font-weight: 600;
+}
+a.calendar-cell.has-session:hover {
+  filter: brightness(1.1);
 }
 
 .filter-bar {

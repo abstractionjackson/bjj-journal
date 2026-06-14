@@ -1,4 +1,4 @@
-import type { MoveCategory, Partner, Session } from "./types";
+import type { Move, MoveCategory, Partner, Session } from "./types";
 
 // Deterministic mock journal: ~6 months of training, three classes a week
 // (Mon/Wed evening class, Sat open mat), with holiday and sick breaks.
@@ -8,6 +8,7 @@ import type { MoveCategory, Partner, Session } from "./types";
 interface ExampleDocument {
   sessions: Session[];
   partners: Partner[];
+  moves: Move[];
 }
 
 function mulberry32(seed: number): () => number {
@@ -118,24 +119,14 @@ export function exampleDocument(): ExampleDocument {
 
     const drills: Session["drills"] = [];
     if (!openMat) {
-      drills.push({
-        id: `${id}-d1`,
-        moveName: weeklyFocus.name,
-        moveCategory: weeklyFocus.category,
-      });
+      const names = [weeklyFocus.name];
       if (rand() < 0.6) {
         const second = pick(MOVES);
-        if (second.name !== weeklyFocus.name) {
-          drills.push({
-            id: `${id}-d2`,
-            moveName: second.name,
-            moveCategory: second.category,
-          });
-        }
+        if (second.name !== weeklyFocus.name) names.push(second.name);
       }
+      drills.push({ id: `${id}-d1`, moveNames: names });
     } else if (rand() < 0.3) {
-      const m = pick(MOVES);
-      drills.push({ id: `${id}-d1`, moveName: m.name, moveCategory: m.category });
+      drills.push({ id: `${id}-d1`, moveNames: [pick(MOVES).name] });
     }
 
     const rollCount = openMat
@@ -165,5 +156,11 @@ export function exampleDocument(): ExampleDocument {
     ...PARTNERS.map((name, i) => ({ id: `ex-p${i + 1}`, name })),
   ];
 
-  return { sessions, partners };
+  const moves: Move[] = MOVES.map((m) => ({
+    name: m.name,
+    category: m.category,
+    notes: "",
+  }));
+
+  return { sessions, partners, moves };
 }

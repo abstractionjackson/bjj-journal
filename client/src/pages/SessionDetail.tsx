@@ -1,11 +1,30 @@
 import { Link, useParams } from "react-router-dom";
 import NoteContent from "../components/NoteContent";
-import { CATEGORY_LABEL, durationMinutes, fmtDate, fmtDuration, fmtTime } from "../lib";
+import {
+  CATEGORY_LABEL,
+  dateKey,
+  durationMinutes,
+  fmtDate,
+  fmtDuration,
+  fmtTime,
+  sessionName,
+  sessionPositions,
+} from "../lib";
 import { store } from "../store";
 
 export default function SessionDetail() {
   const { id } = useParams<{ id: string }>();
   const session = id ? store.getSession(id) : undefined;
+  const position = session
+    ? sessionPositions(store.listSessions()).get(session.id) ?? 0
+    : 0;
+  const moveCategory = new Map(
+    store.listMoves().map((m) => [m.name.toLowerCase(), m.category])
+  );
+  // Moves drilled this session, de-duplicated across drills, order preserved.
+  const drilledMoves = session
+    ? [...new Set(session.drills.flatMap((d) => d.moveNames))]
+    : [];
 
   if (!session) {
     return (
@@ -24,9 +43,12 @@ export default function SessionDetail() {
         <Link to="/log">← Back to log</Link>
       </p>
       <hgroup>
-        <h2>{fmtDate(session.start)}</h2>
+        <h2>{sessionName(session, position)}</h2>
         <p>
-          {fmtTime(session.start)}–{fmtTime(session.end)} ·{" "}
+          <Link to={`/dates/${dateKey(session.start)}`}>
+            {fmtDate(session.start)}
+          </Link>{" "}
+          · {fmtTime(session.start)}–{fmtTime(session.end)} ·{" "}
           {fmtDuration(durationMinutes(session))} on the mat
         </p>
       </hgroup>
@@ -39,7 +61,7 @@ export default function SessionDetail() {
       )}
 
       <h3>Drills</h3>
-      {session.drills.length === 0 ? (
+      {drilledMoves.length === 0 ? (
         <p className="muted">No drills logged for this session.</p>
       ) : (
         <table>
@@ -50,20 +72,23 @@ export default function SessionDetail() {
             </tr>
           </thead>
           <tbody>
-            {session.drills.map((d) => (
-              <tr key={d.id}>
-                <td>
-                  <Link to={`/moves/${encodeURIComponent(d.moveName)}`}>
-                    {d.moveName}
-                  </Link>
-                </td>
-                <td>
-                  <span className={`badge ${d.moveCategory}`}>
-                    {CATEGORY_LABEL[d.moveCategory]}
-                  </span>
-                </td>
-              </tr>
-            ))}
+            {drilledMoves.map((moveName) => {
+              const category = moveCategory.get(moveName.toLowerCase()) ?? "attack";
+              return (
+                <tr key={moveName.toLowerCase()}>
+                  <td>
+                    <Link to={`/moves/${encodeURIComponent(moveName)}`}>
+                      {moveName}
+                    </Link>
+                  </td>
+                  <td>
+                    <span className={`badge ${category}`}>
+                      {CATEGORY_LABEL[category]}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       )}

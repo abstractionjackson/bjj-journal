@@ -1,9 +1,11 @@
 import { NavLink, Route, Routes } from "react-router-dom";
+import DatePage from "./pages/DatePage";
 import Home from "./pages/Home";
 import Log from "./pages/Log";
 import MoveDetail from "./pages/MoveDetail";
 import MoveSummary from "./pages/MoveSummary";
 import PartnerDetail from "./pages/PartnerDetail";
+import Partners from "./pages/Partners";
 import RollDetail from "./pages/RollDetail";
 import RollSummary from "./pages/RollSummary";
 import SessionDetail from "./pages/SessionDetail";
@@ -35,7 +37,9 @@ export default function App() {
         <nav className="site-nav">
           <ul>
             <li>
-              <strong>BJJ Journal</strong>
+              <NavLink to="/" className="brand">
+                <strong>BJJ Journal</strong>
+              </NavLink>
             </li>
           </ul>
           <ul>
@@ -51,6 +55,9 @@ export default function App() {
             <li>
               <NavLink to="/rolls">Rolls</NavLink>
             </li>
+            <li>
+              <NavLink to="/partners">Partners</NavLink>
+            </li>
           </ul>
         </nav>
         <Routes>
@@ -58,10 +65,12 @@ export default function App() {
           <Route path="/log" element={<Log />} />
           <Route path="/sessions" element={<SessionList />} />
           <Route path="/sessions/:id" element={<SessionDetail />} />
+          <Route path="/dates/:date" element={<DatePage />} />
           <Route path="/moves" element={<MoveSummary />} />
           <Route path="/moves/:name" element={<MoveDetail />} />
           <Route path="/rolls" element={<RollSummary />} />
           <Route path="/rolls/:sessionId/:rollId" element={<RollDetail />} />
+          <Route path="/partners" element={<Partners />} />
           <Route path="/partners/:name" element={<PartnerDetail />} />
           <Route path="*" element={<p>Page not found.</p>} />
         </Routes>

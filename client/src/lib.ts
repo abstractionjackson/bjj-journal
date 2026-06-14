@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { store } from "./store";
-import type { MoveCategory, Session } from "./types";
+import type { Move, MoveCategory, Session } from "./types";
 
 export function useSessions() {
   const [sessions, setSessions] = useState<Session[]>(() =>
@@ -8,6 +8,12 @@ export function useSessions() {
   );
   const reload = useCallback(() => setSessions(store.listSessions()), []);
   return { sessions, reload };
+}
+
+export function useMoves() {
+  const [moves, setMoves] = useState<Move[]>(() => store.listMoves());
+  const reload = useCallback(() => setMoves(store.listMoves()), []);
+  return { moves, reload };
 }
 
 export function fmtDate(iso: string): string {
@@ -19,11 +25,43 @@ export function fmtDate(iso: string): string {
   });
 }
 
+/** Compact day/month for tight table cells, e.g. "09/06". */
+export function fmtDateShort(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}`;
+}
+
 export function fmtTime(iso: string): string {
   return new Date(iso).toLocaleTimeString(undefined, {
     hour: "numeric",
     minute: "2-digit",
   });
+}
+
+/** Local-time yyyy-mm-dd for an ISO datetime, used as a per-day key/route param. */
+export function dateKey(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+/**
+ * Position is fixed by chronology: the earliest session is #1. Returns a map of
+ * session id -> position so a stable number is available without storing it.
+ */
+export function sessionPositions(sessions: Session[]): Map<string, number> {
+  const map = new Map<string, number>();
+  [...sessions]
+    .sort((a, b) => a.start.localeCompare(b.start))
+    .forEach((s, i) => map.set(s.id, i + 1));
+  return map;
+}
+
+/** Custom name if set, otherwise the position-derived default "Session #N". */
+export function sessionName(session: Session, position: number): string {
+  const custom = session.name?.trim();
+  return custom ? custom : `Session #${position}`;
 }
 
 export function durationMinutes(s: Session): number {
@@ -43,34 +81,54 @@ export function fmtDuration(mins: number): string {
 export interface MoveStats {
   moveName: string;
   moveCategory: MoveCategory;
+  notes: string;
   timesDrilled: number;
-  lastDrilled: string;
+  lastDrilled: string | null;
   sessions: Session[];
 }
 
-export function aggregateMoves(sessions: Session[]): MoveStats[] {
+/**
+ * Stats for every move in the catalog, joined with how often it was drilled.
+ * Catalog moves that have never been drilled appear with timesDrilled 0 so they
+ * stay visible on the Moves page. Drilled moves missing from the catalog (e.g.
+ * legacy data mid-migration) are included defensively.
+ */
+export function moveStats(sessions: Session[], moves: Move[]): MoveStats[] {
   const map = new Map<string, MoveStats>();
+  for (const m of moves) {
+    map.set(m.name.trim().toLowerCase(), {
+      moveName: m.name,
+      moveCategory: m.category,
+      notes: m.notes,
+      timesDrilled: 0,
+      lastDrilled: null,
+      sessions: [],
+    });
+  }
   for (const s of sessions) {
     for (const d of s.drills) {
-      const key = d.moveName.trim().toLowerCase();
-      const existing = map.get(key);
-      if (existing) {
-        existing.timesDrilled += 1;
-        if (s.start > existing.lastDrilled) {
-          existing.lastDrilled = s.start;
-          existing.moveCategory = d.moveCategory;
+      for (const rawName of d.moveNames) {
+        const key = rawName.trim().toLowerCase();
+        if (!key) continue;
+        let stat = map.get(key);
+        if (!stat) {
+          stat = {
+            moveName: rawName,
+            moveCategory: "attack",
+            notes: "",
+            timesDrilled: 0,
+            lastDrilled: null,
+            sessions: [],
+          };
+          map.set(key, stat);
         }
-        if (!existing.sessions.some((es) => es.id === s.id)) {
-          existing.sessions.push(s);
+        stat.timesDrilled += 1;
+        if (!stat.lastDrilled || s.start > stat.lastDrilled) {
+          stat.lastDrilled = s.start;
         }
-      } else {
-        map.set(key, {
-          moveName: d.moveName,
-          moveCategory: d.moveCategory,
-          timesDrilled: 1,
-          lastDrilled: s.start,
-          sessions: [s],
-        });
+        if (!stat.sessions.some((es) => es.id === s.id)) {
+          stat.sessions.push(s);
+        }
       }
     }
   }

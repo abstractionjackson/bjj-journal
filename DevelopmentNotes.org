@@ -1,3 +1,53 @@
+* [2026-06-13 Sat 16:47]
+** DONE Shrink Calendar View
+- the current implementation of the calendar is crude, and too
+  large. the squares for the date should be small. The whole month
+  should be visible in a single viewport. Month and year should be
+  visble. Bring in a library, as needed.
+- see Cal-Heatmap
+** DONE Remove New Column from Date Detail Session List
+- the name link handles this
+** DONE Update Branding to Link Home
+- as a user, I want to click the branding to navigate to the home page
+** DONE Replace Session Table Column Time Data with Visualization
+- as a user, I do not want to see the time range but a clock with the
+  range filled in. 12h time scale. AM/PM should be white clock with
+  black fill for AM, black clock with white fill for PM.
+- tooltip prints date range on hover
+** DONE Remove "Druation" Colunm from Session Table
+- as a user, I don't want to see this column
+* [2026-06-13 Sat 16:36]
+** DONE Add Move Entity
+- name: string (unique, PK)
+- category: attack | defense | transition
+- notes: string
+** DONE Update Drill Model to unclude an Array of Moves
+- reference Move entries
+* [2026-06-13 Sat 16:22]
+** DONE Add Search To Session Log
+** DONE Add Calendar View
+- as a user, I want to see the Recent Sessions section of the home
+  page as a calendar of the past six weeks, where dates with a session
+  have a distinct color, and provide a link to a date page
+** DONE Add Date Page
+- as a user, I want dates I click on to render a "date page", that is
+  a view with a list of sessions from a given date
+ - as a developer, I may want to render data from other indities
+   associated with a given date on the page, but for the time being,
+   only the sessions need appear.
+** DONE Update Session Model to inlcude Name and Position
+- The sessions should each have a unique name
+- The session should have a number that represents its  position in
+  the history. The can be determined by the datetime. (ie. the
+  earliest datetime is session #1).
+- The positition should be used to generate a default name for the
+  session, like Session #N
+- Names can be edited, but position is fixed
+** DONE Update Session Log Columns
+- add Name column
+  - click name should go to session
+- update Date column
+    - date link should route to Date Page (above)
 * [2026-06-11 Thu 13:51]
 ** Production Readiness
 *** DONE Refactor as Pure Front End

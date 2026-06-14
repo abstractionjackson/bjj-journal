@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { store } from "../store";
-import type { MoveCategory, Partner, Session, SessionInput } from "../types";
+import type { Move, MoveCategory, Partner, Session, SessionInput } from "../types";
 
 interface Props {
   initial?: Session;
@@ -10,8 +10,7 @@ interface Props {
 
 interface DrillRow {
   id?: string;
-  moveName: string;
-  moveCategory: MoveCategory;
+  moveNames: string[];
 }
 
 interface RollRow {
@@ -29,17 +28,98 @@ function toLocalInput(value: string | Date): string {
   )}:${pad(d.getMinutes())}`;
 }
 
+/** Editor for one drill: pick moves from the catalog or create a new one inline. */
+function DrillEditor({
+  moveNames,
+  onAddMove,
+  onRemoveMove,
+  onRemoveDrill,
+}: {
+  moveNames: string[];
+  onAddMove: (name: string, category: MoveCategory) => void;
+  onRemoveMove: (name: string) => void;
+  onRemoveDrill: () => void;
+}) {
+  const [draft, setDraft] = useState("");
+  const [category, setCategory] = useState<MoveCategory>("attack");
+
+  function add() {
+    if (draft.trim() === "") return;
+    onAddMove(draft, category);
+    setDraft("");
+  }
+
+  return (
+    <fieldset className="drill-row">
+      <div className="drill-moves">
+        {moveNames.length === 0 ? (
+          <span className="muted">No moves yet — add from the catalog or create one.</span>
+        ) : (
+          moveNames.map((name) => (
+            <span className="move-chip" key={name.toLowerCase()}>
+              {name}
+              <button
+                type="button"
+                aria-label={`Remove ${name}`}
+                onClick={() => onRemoveMove(name)}
+              >
+                ×
+              </button>
+            </span>
+          ))
+        )}
+      </div>
+      <div className="drill-add">
+        <input
+          placeholder="Move name"
+          aria-label="Move name"
+          list="move-options"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              add();
+            }
+          }}
+        />
+        <select
+          aria-label="Category for new move"
+          title="Category (used when creating a new move)"
+          value={category}
+          onChange={(e) => setCategory(e.target.value as MoveCategory)}
+        >
+          <option value="attack">Attack</option>
+          <option value="defense">Defense</option>
+          <option value="transition">Transition</option>
+        </select>
+        <button type="button" className="outline" onClick={add}>
+          Add move
+        </button>
+        <button type="button" className="secondary" onClick={onRemoveDrill}>
+          Remove drill
+        </button>
+      </div>
+    </fieldset>
+  );
+}
+
 export default function SessionForm({ initial, onSubmit, onCancel }: Props) {
+  const [name, setName] = useState(initial?.name ?? "");
   const [start, setStart] = useState(
     initial ? toLocalInput(initial.start) : ""
   );
   const [end, setEnd] = useState(initial ? toLocalInput(initial.end) : "");
   const [notes, setNotes] = useState(initial?.notes ?? "");
-  const [drills, setDrills] = useState<DrillRow[]>(initial?.drills ?? []);
+  const [drills, setDrills] = useState<DrillRow[]>(
+    initial?.drills.map((d) => ({ id: d.id, moveNames: [...d.moveNames] })) ?? []
+  );
   const [rolls, setRolls] = useState<RollRow[]>(initial?.rolls ?? []);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [partners] = useState<Partner[]>(() => store.listPartners());
+  // Catalog of known moves, refreshed when a new move is created inline.
+  const [moves, setMoves] = useState<Move[]>(() => store.listMoves());
 
   // Default the end to one hour after the start; never touch an end the user
   // already set. Runs on blur, not change: the picker fires change as soon as
@@ -52,9 +132,43 @@ export default function SessionForm({ initial, onSubmit, onCancel }: Props) {
     }
   }
 
-  function updateDrill(i: number, patch: Partial<DrillRow>) {
-    setDrills((ds) => ds.map((d, j) => (j === i ? { ...d, ...patch } : d)));
+  /** Add a move to a drill, creating it in the catalog first if it's new. */
+  function addMoveToDrill(i: number, rawName: string, category: MoveCategory) {
+    const trimmed = rawName.trim();
+    if (!trimmed) return;
+    const existing = moves.find(
+      (m) => m.name.trim().toLowerCase() === trimmed.toLowerCase()
+    );
+    const canonical = existing?.name ?? trimmed;
+    if (!existing) {
+      try {
+        store.createMove({ name: trimmed, category, notes: "" });
+        setMoves(store.listMoves());
+      } catch {
+        // A race with an identical name: ignore and reference it by name anyway.
+      }
+    }
+    setDrills((ds) =>
+      ds.map((d, j) => {
+        if (j !== i) return d;
+        if (d.moveNames.some((n) => n.toLowerCase() === canonical.toLowerCase())) {
+          return d;
+        }
+        return { ...d, moveNames: [...d.moveNames, canonical] };
+      })
+    );
   }
+
+  function removeMoveFromDrill(i: number, name: string) {
+    setDrills((ds) =>
+      ds.map((d, j) =>
+        j === i
+          ? { ...d, moveNames: d.moveNames.filter((n) => n !== name) }
+          : d
+      )
+    );
+  }
+
   function updateRoll(i: number, patch: Partial<RollRow>) {
     setRolls((rs) => rs.map((r, j) => (j === i ? { ...r, ...patch } : r)));
   }
@@ -69,11 +183,12 @@ export default function SessionForm({ initial, onSubmit, onCancel }: Props) {
       setError("End time must not be before start time.");
       return;
     }
-    const cleanDrills = drills.filter((d) => d.moveName.trim() !== "");
+    const cleanDrills = drills.filter((d) => d.moveNames.length > 0);
     const cleanRolls = rolls.filter((r) => r.partnerName.trim() !== "");
     setBusy(true);
     try {
       await onSubmit({
+        name: name.trim() || undefined,
         start: new Date(start).toISOString(),
         end: new Date(end).toISOString(),
         notes,
@@ -89,6 +204,15 @@ export default function SessionForm({ initial, onSubmit, onCancel }: Props) {
   return (
     <article>
       <h3>{initial ? "Edit session" : "Log a session"}</h3>
+      <label>
+        Name
+        <input
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Optional — defaults to Session #N"
+        />
+      </label>
       <div className="grid">
         <label>
           Start
@@ -111,44 +235,29 @@ export default function SessionForm({ initial, onSubmit, onCancel }: Props) {
         </label>
       </div>
 
+      <datalist id="move-options">
+        {moves.map((m) => (
+          <option key={m.name} value={m.name} />
+        ))}
+      </datalist>
+
       <h4>Drills</h4>
       {drills.length === 0 && (
         <p className="muted">No drills yet. Add the moves you worked on.</p>
       )}
       {drills.map((d, i) => (
-        <fieldset className="item-row" key={i}>
-          <input
-            placeholder="Move name"
-            aria-label="Move name"
-            value={d.moveName}
-            onChange={(e) => updateDrill(i, { moveName: e.target.value })}
-          />
-          <select
-            aria-label="Move category"
-            value={d.moveCategory}
-            onChange={(e) =>
-              updateDrill(i, { moveCategory: e.target.value as MoveCategory })
-            }
-          >
-            <option value="attack">Attack</option>
-            <option value="defense">Defense</option>
-            <option value="transition">Transition</option>
-          </select>
-          <button
-            type="button"
-            className="secondary"
-            onClick={() => setDrills((ds) => ds.filter((_, j) => j !== i))}
-          >
-            Remove
-          </button>
-        </fieldset>
+        <DrillEditor
+          key={i}
+          moveNames={d.moveNames}
+          onAddMove={(n, c) => addMoveToDrill(i, n, c)}
+          onRemoveMove={(n) => removeMoveFromDrill(i, n)}
+          onRemoveDrill={() => setDrills((ds) => ds.filter((_, j) => j !== i))}
+        />
       ))}
       <button
         type="button"
         className="outline"
-        onClick={() =>
-          setDrills((ds) => [...ds, { moveName: "", moveCategory: "attack" }])
-        }
+        onClick={() => setDrills((ds) => [...ds, { moveNames: [] }])}
       >
         Add drill
       </button>

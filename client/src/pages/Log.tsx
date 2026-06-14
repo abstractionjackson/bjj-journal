@@ -1,7 +1,16 @@
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import Clock from "../components/Clock";
 import SessionForm from "../components/SessionForm";
-import { durationMinutes, fmtDate, fmtDuration, fmtTime, useSessions } from "../lib";
+import {
+  dateKey,
+  fmtDate,
+  fmtDateShort,
+  fuzzyMatch,
+  sessionName,
+  sessionPositions,
+  useSessions,
+} from "../lib";
 import { store } from "../store";
 import type { Session, SessionInput } from "../types";
 
@@ -10,7 +19,14 @@ export default function Log() {
   const [mode, setMode] = useState<"idle" | "create" | "edit">("idle");
   const [editing, setEditing] = useState<Session | null>(null);
   const [dataMessage, setDataMessage] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
   const fileInput = useRef<HTMLInputElement>(null);
+
+  const positions = sessionPositions(sessions);
+  const filtered = sessions.filter((s) => {
+    const name = sessionName(s, positions.get(s.id) ?? 0);
+    return fuzzyMatch(query, name) || fuzzyMatch(query, fmtDate(s.start));
+  });
 
   async function handleCreate(input: SessionInput) {
     store.createSession(input);
@@ -27,7 +43,8 @@ export default function Log() {
   }
 
   function handleDelete(s: Session) {
-    if (!window.confirm(`Delete the session from ${fmtDate(s.start)}?`)) return;
+    const label = sessionName(s, positions.get(s.id) ?? 0);
+    if (!window.confirm(`Delete ${label} (${fmtDate(s.start)})?`)) return;
     store.deleteSession(s.id);
     reload();
   }
@@ -87,53 +104,74 @@ export default function Log() {
           No sessions yet. Log your first one above.
         </p>
       ) : (
-        <table style={{ marginTop: "1rem" }}>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Time</th>
-              <th>Duration</th>
-              <th>Drills</th>
-              <th>Rolls</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sessions.map((s) => (
-              <tr key={s.id}>
-                <td>
-                  <Link to={`/sessions/${s.id}`}>{fmtDate(s.start)}</Link>
-                </td>
-                <td>
-                  {fmtTime(s.start)}–{fmtTime(s.end)}
-                </td>
-                <td>{fmtDuration(durationMinutes(s))}</td>
-                <td>{s.drills.length}</td>
-                <td>{s.rolls.length}</td>
-                <td>
-                  <div className="row-actions">
-                    <button
-                      className="outline"
-                      onClick={() => {
-                        setEditing(s);
-                        setMode("edit");
-                        window.scrollTo({ top: 0, behavior: "smooth" });
-                      }}
-                    >
-                      Edit
-                    </button>
-                    <button
-                      className="secondary outline"
-                      onClick={() => handleDelete(s)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <>
+          <div className="filter-bar" style={{ marginTop: "1rem" }}>
+            <input
+              type="search"
+              placeholder="Search by name or date…"
+              aria-label="Search sessions"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </div>
+          {filtered.length === 0 ? (
+            <p>No sessions match the current search.</p>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Date</th>
+                  <th>Time</th>
+                  <th>Drills</th>
+                  <th>Rolls</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((s) => (
+                  <tr key={s.id}>
+                    <td>
+                      <Link to={`/sessions/${s.id}`}>
+                        {sessionName(s, positions.get(s.id) ?? 0)}
+                      </Link>
+                    </td>
+                    <td>
+                      <Link to={`/dates/${dateKey(s.start)}`}>
+                        {fmtDateShort(s.start)}
+                      </Link>
+                    </td>
+                    <td>
+                      <Clock start={s.start} end={s.end} />
+                    </td>
+                    <td>{s.drills.length}</td>
+                    <td>{s.rolls.length}</td>
+                    <td>
+                      <div className="row-actions">
+                        <button
+                          className="outline"
+                          onClick={() => {
+                            setEditing(s);
+                            setMode("edit");
+                            window.scrollTo({ top: 0, behavior: "smooth" });
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          className="secondary outline"
+                          onClick={() => handleDelete(s)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
       )}
 
       <h3 style={{ marginTop: "2rem" }}>Your data</h3>

@@ -1,5 +1,5 @@
 import { Link, useParams } from "react-router-dom";
-import { fmtDate, fmtTime, useSessions } from "../lib";
+import { fmtDate, fmtDateShort, fmtTime, useSessions } from "../lib";
 
 export default function PartnerDetail() {
   const { name } = useParams<{ name: string }>();
@@ -16,7 +16,7 @@ export default function PartnerDetail() {
     return (
       <>
         <p>
-          <Link to="/rolls">← Back to rolls</Link>
+          <Link to="/partners">← Back to partners</Link>
         </p>
         <p>No rolls found with “{decoded}”.</p>
       </>
@@ -52,7 +52,7 @@ export default function PartnerDetail() {
         <tbody>
           {rolls.map(({ session, roll }) => (
             <tr key={`${session.id}-${roll.id}`}>
-              <td>{fmtDate(session.start)}</td>
+              <td>{fmtDateShort(session.start)}</td>
               <td>
                 <Link to={`/sessions/${session.id}`}>
                   {fmtTime(session.start)}–{fmtTime(session.end)}
